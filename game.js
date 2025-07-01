@@ -29,6 +29,7 @@ const BRICK_HEIGHT = 32;
 const START_BALL_SPEED = 200;
 const POWERUP_SPEED = 60;
 const MAX_LIVES = 3;
+const ORANGE = 0xffa500; // Orange color for new brick type
 
 // Game variables
 let paddle, // The player's paddle
@@ -85,29 +86,42 @@ function create() {
     }
   }
   Phaser.Utils.Array.Shuffle(brickPositions); // Shuffle positions
+
+  // Place a few orange bricks randomly
+  let orangeBrickCount = 8; // Number of orange bricks
+  let orangeIndices = Phaser.Utils.Array.Shuffle([
+    ...Array(BRICK_ROWS * BRICK_COLS).keys(),
+  ]).slice(0, orangeBrickCount);
   let i = 0;
   for (let row = 0; row < BRICK_ROWS; row++) {
     for (let col = 0; col < BRICK_COLS; col++) {
-      let { x, y } = brickPositions[i++];
+      let { x, y } = brickPositions[i];
       let color, hits, type;
-      if (row === 0) {
-        color = 0x3399ff; // Blue bricks (always drop powerup)
+      if (orangeIndices.includes(i)) {
+        color = ORANGE;
+        hits = 1;
+        type = "orange";
+      } else if (row === 0) {
+        color = 0x3399ff; // Blue bricks
         hits = 1;
         type = "blue";
       } else if (row < 3) {
-        color = 0xff4444; // Red bricks (2 hits)
+        color = 0xff4444; // Red bricks
         hits = 2;
         type = "red";
       } else {
-        color = 0x44ff44; // Green bricks (1 hit)
+        color = 0x44ff44; // Green bricks
         hits = 1;
         type = "green";
       }
       let brick = this.add.rectangle(x, y, BRICK_WIDTH, BRICK_HEIGHT, color);
-      brick.setData("hits", hits); // Store hits needed
+      brick.setData("hits", hits);
       brick.setData("color", color);
       brick.setData("type", type);
+      brick.setData("row", row);
+      brick.setData("col", col);
       bricks.add(brick);
+      i++;
     }
   }
 
@@ -228,13 +242,42 @@ function ballHitPaddle(ballObj, paddleObj) {
 function ballHitBrick(ballObj, brickObj) {
   let hits = brickObj.getData("hits");
   let type = brickObj.getData("type");
+  let row = brickObj.getData("row");
+  let col = brickObj.getData("col");
   if (hits > 1) {
     brickObj.setData("hits", hits - 1);
     brickObj.fillColor = 0x44ff44; // Change to green after first hit
   } else {
-    // Blue brick: always drop a powerup
     if (type === "blue") {
       spawnPowerup.call(this, brickObj.x, brickObj.y);
+    }
+    if (type === "orange") {
+      // Visual explosion effect
+      const explosionRadius = Math.max(BRICK_WIDTH, BRICK_HEIGHT) * 2.2; // Wider radius
+      const bx = brickObj.x;
+      const by = brickObj.y;
+      // Create a white circle at the brick's position
+      const explosion = this.add.circle(bx, by, 10, 0xffffff, 0.5);
+      explosion.setDepth(10);
+      this.tweens.add({
+        targets: explosion,
+        radius: explosionRadius,
+        alpha: 0,
+        duration: 350,
+        ease: "Cubic.easeOut",
+        onComplete: () => explosion.destroy(),
+      });
+      // Destroy all bricks within the explosion radius
+      const toDestroy = [];
+      bricks.getChildren().forEach((b) => {
+        if (b === brickObj) return;
+        const dx = b.x - bx;
+        const dy = b.y - by;
+        if (Math.sqrt(dx * dx + dy * dy) <= explosionRadius) {
+          toDestroy.push(b);
+        }
+      });
+      toDestroy.forEach((b) => b.destroy());
     }
     brickObj.destroy();
   }
