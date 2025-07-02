@@ -25,6 +25,7 @@ A simple 2D breakout/ricochet game built with [Phaser 3](https://phaser.io/). Th
 - UI showing lives and current ball speed
 - Game over state
 - **Sound effects for all major actions**
+- **Background music that loops during gameplay**
 
 ## Sound Effects
 
@@ -35,6 +36,12 @@ A simple 2D breakout/ricochet game built with [Phaser 3](https://phaser.io/). Th
 
 All sound files are located in `assets/sounds/`.
 Sound files were created using https://sfxr.me/
+
+## Music
+
+- **Background music:** `GalacticRap.mp3` plays and loops throughout the game.
+- **Source:** [incompetech.com Royalty-Free Music](https://incompetech.com/music/royalty-free/music.html)
+- The music file is located in `assets/music/`.
 
 ## How to Run
 

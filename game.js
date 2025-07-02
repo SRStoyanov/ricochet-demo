@@ -56,6 +56,8 @@ function preload() {
   this.load.audio("death", "assets/sounds/death.wav");
   this.load.audio("explosion", "assets/sounds/explosion.wav");
   this.load.audio("powerUp", "assets/sounds/powerUp.wav");
+  // Load background music (mp3 is supported by Phaser)
+  this.load.audio("bgm", "assets/music/GalacticRap.mp3");
 }
 
 // Create game objects and set up the scene
@@ -204,6 +206,10 @@ function create() {
       playRandomBounce(this);
     }
   });
+
+  // Play background music, looped
+  this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
+  this.bgm.play();
 }
 
 // Main game loop, runs every frame
