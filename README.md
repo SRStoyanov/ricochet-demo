@@ -24,6 +24,17 @@ A simple 2D breakout/ricochet game built with [Phaser 3](https://phaser.io/). Th
 - Powerups that drop from blue bricks and fall straight down
 - UI showing lives and current ball speed
 - Game over state
+- **Sound effects for all major actions**
+
+## Sound Effects
+
+- **Bounce:** One of five random bounce sounds (`bounce-var1.wav` to `bounce-var5.wav`) plays whenever the ball bounces off the paddle, bricks, or the walls/ceiling.
+- **Death:** `death.wav` plays when the ball falls through the bottom of the screen and you lose a life.
+- **Explosion:** `explosion.wav` plays when an orange brick explodes.
+- **Power Up:** `powerUp.wav` plays when you catch a powerup with the paddle.
+
+All sound files are located in `assets/sounds/`.
+Sound files were created using https://sfxr.me/
 
 ## How to Run
 

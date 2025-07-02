@@ -48,7 +48,15 @@ let ballSpeed = START_BALL_SPEED; // Current ball speed
 const game = new Phaser.Game(config);
 
 // Preload assets (none needed for this game)
-function preload() {}
+function preload() {
+  // Load sound effects
+  for (let i = 1; i <= 5; i++) {
+    this.load.audio("bounce-var" + i, "assets/sounds/bounce-var" + i + ".wav");
+  }
+  this.load.audio("death", "assets/sounds/death.wav");
+  this.load.audio("explosion", "assets/sounds/explosion.wav");
+  this.load.audio("powerUp", "assets/sounds/powerUp.wav");
+}
 
 // Create game objects and set up the scene
 function create() {
@@ -165,11 +173,37 @@ function create() {
   });
 
   // Set up collisions
-  this.physics.add.collider(ball, paddle, ballHitPaddle, null, this); // Ball bounces off paddle
-  this.physics.add.collider(ball, bricks, ballHitBrick, null, this); // Ball hits bricks
+  this.physics.add.collider(
+    ball,
+    paddle,
+    (ballObj, paddleObj) => {
+      ballHitPaddle.call(this, ballObj, paddleObj);
+      playRandomBounce(this);
+    },
+    null,
+    this
+  );
+  this.physics.add.collider(
+    ball,
+    bricks,
+    (ballObj, brickObj) => {
+      ballHitBrick.call(this, ballObj, brickObj);
+      playRandomBounce(this);
+    },
+    null,
+    this
+  );
 
   // Set world bounds: no collision on the bottom
   this.physics.world.setBoundsCollision(true, true, true, false); // left, right, top, bottom
+
+  // Play random bounce sound when ball hits left, right, or top world bounds
+  ball.body.onWorldBounds = true;
+  this.physics.world.on("worldbounds", (body, up, down, left, right) => {
+    if (body.gameObject === ball && (up || left || right)) {
+      playRandomBounce(this);
+    }
+  });
 }
 
 // Main game loop, runs every frame
@@ -183,6 +217,7 @@ function update() {
 
   // Ball falls below screen: lose a life or game over
   if (ball.y > config.height) {
+    this.sound.play("death");
     lives--;
     livesText.setText("Lives: " + lives);
     if (lives > 0) {
@@ -281,6 +316,7 @@ function ballHitBrick(ballObj, brickObj) {
         }
       });
       toDestroy.forEach((b) => b.destroy());
+      this.sound.play("explosion");
     }
     brickObj.destroy();
   }
@@ -309,4 +345,10 @@ function catchPowerup(paddleObj, powerupObj) {
     ballSpeed = Math.max(ballSpeed - 30, 50);
   }
   speedText.setText("Speed: " + ballSpeed);
+  paddleObj.scene.sound.play("powerUp");
+}
+
+function playRandomBounce(scene) {
+  const idx = Phaser.Math.Between(1, 5);
+  scene.sound.play("bounce-var" + idx);
 }
