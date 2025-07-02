@@ -291,8 +291,8 @@ function update() {
     ball.body.setVelocity(v.x, v.y);
   }
 
-  // Ball falls below screen: lose a life or game over
-  if (ball.y > config.height) {
+  // Ball falls below the top of the UI bar: lose a life or game over
+  if (ball.y > config.height - UI_BAR_HEIGHT) {
     if (!sfxMuted) this.sound.play("death");
     lives--;
     livesText.setText("Lives: " + lives);
@@ -362,40 +362,48 @@ function ballHitBrick(ballObj, brickObj) {
     brickObj.setData("hits", hits - 1);
     brickObj.fillColor = 0x44ff44; // Change to green after first hit
   } else {
-    if (type === "blue") {
-      spawnPowerup.call(this, brickObj.x, brickObj.y);
-    }
-    if (type === "orange") {
-      // Visual explosion effect
-      const explosionRadius = Math.max(BRICK_WIDTH, BRICK_HEIGHT) * 2.2; // Wider radius
-      const bx = brickObj.x;
-      const by = brickObj.y;
-      // Create a white circle at the brick's position
-      const explosion = this.add.circle(bx, by, 10, 0xffffff, 0.5);
-      explosion.setDepth(10);
-      this.tweens.add({
-        targets: explosion,
-        radius: explosionRadius,
-        alpha: 0,
-        duration: 350,
-        ease: "Cubic.easeOut",
-        onComplete: () => explosion.destroy(),
-      });
-      // Destroy all bricks within the explosion radius
-      const toDestroy = [];
-      bricks.getChildren().forEach((b) => {
-        if (b === brickObj) return;
-        const dx = b.x - bx;
-        const dy = b.y - by;
-        if (Math.sqrt(dx * dx + dy * dy) <= explosionRadius) {
-          toDestroy.push(b);
-        }
-      });
-      toDestroy.forEach((b) => b.destroy());
-      if (!sfxMuted) this.sound.play("explosion");
-    }
-    brickObj.destroy();
+    handleBrickDestruction.call(this, brickObj);
   }
+}
+
+function handleBrickDestruction(brickObj) {
+  const type = brickObj.getData("type");
+  if (type === "blue") {
+    spawnPowerup.call(this, brickObj.x, brickObj.y);
+  }
+  if (type === "orange") {
+    // Visual explosion effect
+    const explosionRadius = Math.max(BRICK_WIDTH, BRICK_HEIGHT) * 2.2; // Wider radius
+    const bx = brickObj.x;
+    const by = brickObj.y;
+    // Create a white circle at the brick's position
+    const explosion = this.add.circle(bx, by, 10, 0xffffff, 0.5);
+    explosion.setDepth(10);
+    this.tweens.add({
+      targets: explosion,
+      radius: explosionRadius,
+      alpha: 0,
+      duration: 350,
+      ease: "Cubic.easeOut",
+      onComplete: () => explosion.destroy(),
+    });
+    // Destroy all bricks within the explosion radius
+    const toDestroy = [];
+    bricks.getChildren().forEach((b) => {
+      if (b === brickObj) return;
+      const dx = b.x - bx;
+      const dy = b.y - by;
+      if (Math.sqrt(dx * dx + dy * dy) <= explosionRadius) {
+        toDestroy.push(b);
+      }
+    });
+    toDestroy.forEach((b) => {
+      handleBrickDestruction.call(this, b);
+      b.destroy();
+    });
+    if (!sfxMuted) this.sound.play("explosion");
+  }
+  brickObj.destroy();
 }
 
 // Spawn a powerup (red = speed up, yellow = slow down)
