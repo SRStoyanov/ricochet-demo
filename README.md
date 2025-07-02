@@ -57,6 +57,19 @@ Sound files were created using https://sfxr.me/
 - **Mute/Unmute Music:** Click the "🔊 Music" or "🔇 Music" button to toggle the background music on or off. This does not affect sound effects.
 - Clicking within the UI bar will not launch the ball, so you can safely interact with the UI without affecting gameplay.
 
+## Sprites and Graphics
+
+- The **paddle** uses a custom PNG sprite (`paddle.png`) for its appearance.
+- The **ball** uses a custom PNG sprite (`ball.png`) and rotates as it moves for a dynamic effect.
+- **Bricks** use custom PNG sprites for each type:
+  - `brick-green.png` for green bricks
+  - `brick-blue.png` for blue bricks
+  - `brick-orange.png` for orange bricks
+  - `brick-red-whole.png` for undamaged red bricks
+  - `brick-red-damaged.png` for red bricks after one hit
+- All sprites are sized in-game to match the intended gameplay dimensions (e.g., bricks are 64x32 pixels).
+- Sprites are stored in `assets/graphics/sprites/`.
+
 ## How to Run
 
 1. Make sure you have a modern web browser (Chrome, Firefox, Edge, etc).

@@ -114,6 +114,19 @@ function preload() {
   this.load.audio("powerUp", "assets/sounds/powerUp.wav");
   // Load background music (mp3 is supported by Phaser)
   this.load.audio("bgm", "assets/music/GalacticRap.mp3");
+  this.load.image("paddle", "assets/graphics/sprites/paddle.png");
+  this.load.image("ball", "assets/graphics/sprites/ball.png");
+  this.load.image("brick_blue", "assets/graphics/sprites/brick-blue.png");
+  this.load.image("brick_green", "assets/graphics/sprites/brick-green.png");
+  this.load.image("brick_orange", "assets/graphics/sprites/brick-orange.png");
+  this.load.image(
+    "brick_red_whole",
+    "assets/graphics/sprites/brick-red-whole.png"
+  );
+  this.load.image(
+    "brick_red_damaged",
+    "assets/graphics/sprites/brick-red-damaged.png"
+  );
 }
 
 // Game constants
@@ -143,30 +156,28 @@ let ballLaunched = false; // Is the ball in motion?
 let lives = MAX_LIVES; // Player's remaining lives
 let ballSpeed = START_BALL_SPEED; // Current ball speed
 let sfxMuted = false; // SFX mute state
+let ballRotationDir = 1; // 1 for clockwise, -1 for counterclockwise
 
 // Create game objects and set up the scene
 function create() {
-  // Create the player's paddle as a white rectangle
-  paddle = this.add.rectangle(
+  // Create the player's paddle as a sprite
+  paddle = this.add.sprite(
     config.width / 2,
-    config.height - 40,
-    PADDLE_WIDTH,
-    PADDLE_HEIGHT,
-    0xffffff
+    config.height - UI_BAR_HEIGHT - 20,
+    "paddle"
   );
+  paddle.displayWidth = PADDLE_WIDTH;
+  paddle.displayHeight = PADDLE_HEIGHT;
   this.physics.add.existing(paddle, true); // Add static physics body
   paddleBody = paddle.body;
 
-  // Create the ball as a yellow circle
-  ball = this.add.circle(
-    config.width / 2,
-    config.height - 60,
-    BALL_SIZE / 2,
-    0xffff00
-  );
-  this.physics.add.existing(ball); // Add dynamic physics body
-  ball.body.setCollideWorldBounds(true, 1, 1); // Ball bounces off walls
-  ball.body.setBounce(1, 1); // Full bounce
+  // Create the ball as a sprite
+  ball = this.add.sprite(config.width / 2, config.height - 60, "ball");
+  ball.displayWidth = BALL_SIZE;
+  ball.displayHeight = BALL_SIZE;
+  this.physics.add.existing(ball);
+  ball.body.setCollideWorldBounds(true, 1, 1);
+  ball.body.setBounce(1, 1);
   resetBall.call(this); // Start with ball glued to paddle
 
   // Create and randomize brick positions
@@ -190,27 +201,28 @@ function create() {
   for (let row = 0; row < BRICK_ROWS; row++) {
     for (let col = 0; col < BRICK_COLS; col++) {
       let { x, y } = brickPositions[i];
-      let color, hits, type;
+      let spriteKey, hits, type;
       if (orangeIndices.includes(i)) {
-        color = ORANGE;
+        spriteKey = "brick_orange";
         hits = 1;
         type = "orange";
       } else if (row === 0) {
-        color = 0x3399ff; // Blue bricks
+        spriteKey = "brick_blue";
         hits = 1;
         type = "blue";
       } else if (row < 3) {
-        color = 0xff4444; // Red bricks
+        spriteKey = "brick_red_whole";
         hits = 2;
         type = "red";
       } else {
-        color = 0x44ff44; // Green bricks
+        spriteKey = "brick_green";
         hits = 1;
         type = "green";
       }
-      let brick = this.add.rectangle(x, y, BRICK_WIDTH, BRICK_HEIGHT, color);
+      let brick = this.add.sprite(x, y, spriteKey);
+      brick.displayWidth = BRICK_WIDTH;
+      brick.displayHeight = BRICK_HEIGHT;
       brick.setData("hits", hits);
-      brick.setData("color", color);
       brick.setData("type", type);
       brick.setData("row", row);
       brick.setData("col", col);
@@ -400,6 +412,12 @@ function update() {
       p.destroy();
     }
   });
+
+  // Ball rotation animation
+  if (ballLaunched && ball && ball.body && ball.body.speed > 0) {
+    // Rotation speed is 1/5000 of ball's travel speed (very slow)
+    ball.rotation += (ball.body.speed / 5000) * ballRotationDir;
+  }
 }
 
 // Reset the ball to the paddle (after losing a life or at start)
@@ -437,7 +455,10 @@ function ballHitBrick(ballObj, brickObj) {
   let col = brickObj.getData("col");
   if (hits > 1) {
     brickObj.setData("hits", hits - 1);
-    brickObj.fillColor = 0x44ff44; // Change to green after first hit
+    // Change red brick to damaged sprite after first hit
+    if (type === "red") {
+      brickObj.setTexture("brick_red_damaged");
+    }
   } else {
     handleBrickDestruction.call(this, brickObj);
   }
@@ -515,4 +536,8 @@ function playRandomBounce(scene) {
   if (sfxMuted) return;
   const idx = Phaser.Math.Between(1, 5);
   scene.sound.play("bounce-var" + idx);
+  // 20% chance to reverse ball rotation direction
+  if (Phaser.Math.FloatBetween(0, 1) < 0.2) {
+    ballRotationDir *= -1;
+  }
 }
