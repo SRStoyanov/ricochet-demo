@@ -43,6 +43,17 @@ Sound files were created using https://sfxr.me/
 - **Source:** [incompetech.com Royalty-Free Music](https://incompetech.com/music/royalty-free/music.html)
 - The music file is located in `assets/music/`.
 
+## UI and Controls
+
+- The bottom of the screen features a distinct horizontal UI bar, visually separated from the play area.
+- The UI bar displays:
+  - **Lives** (number of remaining balls)
+  - **Ball Speed** (current speed of the ball)
+  - **Mute/Unmute buttons** for both SFX and music
+- **Mute/Unmute SFX:** Click the "🔊 SFX" or "🔇 SFX" button to toggle all sound effects (bounce, death, explosion, powerup) on or off. This does not affect the music.
+- **Mute/Unmute Music:** Click the "🔊 Music" or "🔇 Music" button to toggle the background music on or off. This does not affect sound effects.
+- Clicking within the UI bar will not launch the ball, so you can safely interact with the UI without affecting gameplay.
+
 ## How to Run
 
 1. Make sure you have a modern web browser (Chrome, Firefox, Edge, etc).

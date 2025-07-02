@@ -30,6 +30,7 @@ const START_BALL_SPEED = 200;
 const POWERUP_SPEED = 60;
 const MAX_LIVES = 3;
 const ORANGE = 0xffa500; // Orange color for new brick type
+const UI_BAR_HEIGHT = 60; // Height of the UI bar at the bottom
 
 // Game variables
 let paddle, // The player's paddle
@@ -43,6 +44,7 @@ let paddle, // The player's paddle
 let ballLaunched = false; // Is the ball in motion?
 let lives = MAX_LIVES; // Player's remaining lives
 let ballSpeed = START_BALL_SPEED; // Current ball speed
+let sfxMuted = false; // SFX mute state
 
 // Create the Phaser game instance
 const game = new Phaser.Game(config);
@@ -135,20 +137,81 @@ function create() {
     }
   }
 
-  // UI elements
-  gameOverText = this.add
-    .text(config.width / 2, config.height / 2, "", {
-      fontSize: "48px",
+  // UI bar background
+  const uiBarColor = 0x333388; // More distinct from #222 background
+  const uiBar = this.add.rectangle(
+    config.width / 2,
+    config.height - UI_BAR_HEIGHT / 2,
+    config.width,
+    UI_BAR_HEIGHT,
+    uiBarColor
+  );
+  uiBar.setOrigin(0.5);
+  uiBar.setDepth(100);
+
+  // Move paddle up to make space for UI bar
+  paddle.y = config.height - UI_BAR_HEIGHT - 20;
+  paddle.body.updateFromGameObject();
+
+  // Move ball start position up as well
+  ball.y = paddle.y - PADDLE_HEIGHT / 2 - BALL_SIZE / 2;
+  ball.body.updateFromGameObject();
+
+  // UI elements in the bar
+  livesText = this.add.text(
+    30,
+    config.height - UI_BAR_HEIGHT + 15,
+    "Lives: " + lives,
+    {
+      fontSize: "24px",
       fill: "#fff",
+    }
+  );
+  livesText.setDepth(101);
+
+  speedText = this.add.text(
+    200,
+    config.height - UI_BAR_HEIGHT + 15,
+    "Speed: " + ballSpeed,
+    {
+      fontSize: "24px",
+      fill: "#fff",
+    }
+  );
+  speedText.setDepth(101);
+
+  // SFX mute/unmute button
+  const sfxButton = this.add
+    .text(400, config.height - UI_BAR_HEIGHT + 15, "🔊 SFX", {
+      fontSize: "24px",
+      fill: "#fff",
+      backgroundColor: "#444",
+      padding: { left: 10, right: 10, top: 2, bottom: 2 },
+      borderRadius: 5,
     })
-    .setOrigin(0.5);
-  livesText = this.add.text(20, 10, "Lives: " + lives, {
-    fontSize: "24px",
-    fill: "#fff",
+    .setInteractive()
+    .setDepth(101);
+  sfxButton.on("pointerdown", () => {
+    sfxMuted = !sfxMuted;
+    sfxButton.setText(sfxMuted ? "🔇 SFX" : "🔊 SFX");
   });
-  speedText = this.add.text(20, 40, "Speed: " + ballSpeed, {
-    fontSize: "24px",
-    fill: "#fff",
+
+  // Music mute/unmute button
+  let musicMuted = false;
+  const musicButton = this.add
+    .text(520, config.height - UI_BAR_HEIGHT + 15, "🔊 Music", {
+      fontSize: "24px",
+      fill: "#fff",
+      backgroundColor: "#444",
+      padding: { left: 10, right: 10, top: 2, bottom: 2 },
+      borderRadius: 5,
+    })
+    .setInteractive()
+    .setDepth(101);
+  musicButton.on("pointerdown", () => {
+    musicMuted = !musicMuted;
+    if (this.bgm) this.bgm.setMute(musicMuted);
+    musicButton.setText(musicMuted ? "🔇 Music" : "🔊 Music");
   });
 
   // Mouse movement controls the paddle (left/right only)
@@ -169,6 +232,13 @@ function create() {
 
   // Launch the ball on mouse click
   this.input.on("pointerdown", (pointer) => {
+    // Prevent launching if pointer is inside the UI bar
+    if (
+      pointer.y >= config.height - UI_BAR_HEIGHT &&
+      pointer.y <= config.height
+    ) {
+      return;
+    }
     if (!ballLaunched && lives > 0) {
       launchBall();
     }
@@ -223,7 +293,7 @@ function update() {
 
   // Ball falls below screen: lose a life or game over
   if (ball.y > config.height) {
-    this.sound.play("death");
+    if (!sfxMuted) this.sound.play("death");
     lives--;
     livesText.setText("Lives: " + lives);
     if (lives > 0) {
@@ -322,7 +392,7 @@ function ballHitBrick(ballObj, brickObj) {
         }
       });
       toDestroy.forEach((b) => b.destroy());
-      this.sound.play("explosion");
+      if (!sfxMuted) this.sound.play("explosion");
     }
     brickObj.destroy();
   }
@@ -351,10 +421,11 @@ function catchPowerup(paddleObj, powerupObj) {
     ballSpeed = Math.max(ballSpeed - 30, 50);
   }
   speedText.setText("Speed: " + ballSpeed);
-  paddleObj.scene.sound.play("powerUp");
+  if (!sfxMuted) paddleObj.scene.sound.play("powerUp");
 }
 
 function playRandomBounce(scene) {
+  if (sfxMuted) return;
   const idx = Phaser.Math.Between(1, 5);
   scene.sound.play("bounce-var" + idx);
 }
