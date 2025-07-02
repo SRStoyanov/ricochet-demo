@@ -167,6 +167,9 @@ function create() {
   // Set up collisions
   this.physics.add.collider(ball, paddle, ballHitPaddle, null, this); // Ball bounces off paddle
   this.physics.add.collider(ball, bricks, ballHitBrick, null, this); // Ball hits bricks
+
+  // Set world bounds: no collision on the bottom
+  this.physics.world.setBoundsCollision(true, true, true, false); // left, right, top, bottom
 }
 
 // Main game loop, runs every frame
