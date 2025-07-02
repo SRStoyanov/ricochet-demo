@@ -1,22 +1,120 @@
-// Phaser game configuration object
+// Phaser Scenes
+class TitleScene extends Phaser.Scene {
+  constructor() {
+    super("TitleScene");
+  }
+  preload() {
+    preload.call(this);
+  }
+  create() {
+    // Play music if not already playing
+    if (!this.sound.get("bgm")) {
+      this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
+      this.bgm.play();
+    } else {
+      this.bgm = this.sound.get("bgm");
+      if (!this.bgm.isPlaying) this.bgm.play();
+    }
+    this.cameras.main.setBackgroundColor("#222");
+    this.add
+      .text(config.width / 2, 180, "Rogueochet Demo", {
+        fontSize: "48px",
+        fill: "#fff",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    const startBtn = this.add
+      .text(config.width / 2, 320, "Start", {
+        fontSize: "36px",
+        fill: "#fff",
+        backgroundColor: "#333388",
+        padding: { left: 30, right: 30, top: 10, bottom: 10 },
+        borderRadius: 10,
+      })
+      .setOrigin(0.5)
+      .setInteractive();
+    startBtn.on("pointerdown", () => {
+      this.scene.start("MainScene");
+    });
+  }
+}
+
+class GameOverScene extends Phaser.Scene {
+  constructor() {
+    super("GameOverScene");
+  }
+  create() {
+    this.cameras.main.setBackgroundColor("#a00");
+    this.add
+      .text(config.width / 2, 200, "Game Over!", {
+        fontSize: "48px",
+        fill: "#fff",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    const restartBtn = this.add
+      .text(config.width / 2, 340, "Restart", {
+        fontSize: "36px",
+        fill: "#fff",
+        backgroundColor: "#a00",
+        padding: { left: 30, right: 30, top: 10, bottom: 10 },
+        borderRadius: 10,
+      })
+      .setOrigin(0.5)
+      .setInteractive();
+    restartBtn.on("pointerdown", () => {
+      lives = MAX_LIVES;
+      this.scene.start("MainScene");
+    });
+  }
+}
+
+class MainScene extends Phaser.Scene {
+  constructor() {
+    super("MainScene");
+  }
+  preload() {
+    /* no-op, already loaded in TitleScene */
+  }
+  create() {
+    create.call(this);
+  }
+  update() {
+    update.call(this);
+  }
+}
+
+// Phaser game configuration object (move this below scene classes)
 const config = {
-  type: Phaser.AUTO, // Use WebGL if available, otherwise fall back to Canvas
-  width: 800, // Game width in pixels
-  height: 600, // Game height in pixels
-  backgroundColor: "#222", // Background color
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  backgroundColor: "#222",
   physics: {
-    default: "arcade", // Use Arcade Physics
+    default: "arcade",
     arcade: {
-      gravity: { y: 0 }, // No gravity by default
-      debug: false, // Set to true to see physics bodies
+      gravity: { y: 0 },
+      debug: false,
     },
   },
-  scene: {
-    preload,
-    create,
-    update,
-  },
+  scene: [TitleScene, MainScene, GameOverScene],
 };
+
+// Create the Phaser game instance (move this below config)
+const game = new Phaser.Game(config);
+
+// Preload assets (none needed for this game)
+function preload() {
+  // Load sound effects
+  for (let i = 1; i <= 5; i++) {
+    this.load.audio("bounce-var" + i, "assets/sounds/bounce-var" + i + ".wav");
+  }
+  this.load.audio("death", "assets/sounds/death.wav");
+  this.load.audio("explosion", "assets/sounds/explosion.wav");
+  this.load.audio("powerUp", "assets/sounds/powerUp.wav");
+  // Load background music (mp3 is supported by Phaser)
+  this.load.audio("bgm", "assets/music/GalacticRap.mp3");
+}
 
 // Game constants
 const PADDLE_WIDTH = 120;
@@ -45,22 +143,6 @@ let ballLaunched = false; // Is the ball in motion?
 let lives = MAX_LIVES; // Player's remaining lives
 let ballSpeed = START_BALL_SPEED; // Current ball speed
 let sfxMuted = false; // SFX mute state
-
-// Create the Phaser game instance
-const game = new Phaser.Game(config);
-
-// Preload assets (none needed for this game)
-function preload() {
-  // Load sound effects
-  for (let i = 1; i <= 5; i++) {
-    this.load.audio("bounce-var" + i, "assets/sounds/bounce-var" + i + ".wav");
-  }
-  this.load.audio("death", "assets/sounds/death.wav");
-  this.load.audio("explosion", "assets/sounds/explosion.wav");
-  this.load.audio("powerUp", "assets/sounds/powerUp.wav");
-  // Load background music (mp3 is supported by Phaser)
-  this.load.audio("bgm", "assets/music/GalacticRap.mp3");
-}
 
 // Create game objects and set up the scene
 function create() {
@@ -276,10 +358,6 @@ function create() {
       playRandomBounce(this);
     }
   });
-
-  // Play background music, looped
-  this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
-  this.bgm.play();
 }
 
 // Main game loop, runs every frame
@@ -299,10 +377,9 @@ function update() {
     if (lives > 0) {
       resetBall.call(this);
     } else {
-      gameOverText.setText("Game Over!");
-      ball.body.setVelocity(0, 0);
-      ball.body.setEnable(false);
-      ballLaunched = false;
+      // Instead of showing text, switch to GameOverScene
+      this.scene.start("GameOverScene");
+      return;
     }
   }
 
@@ -367,6 +444,8 @@ function ballHitBrick(ballObj, brickObj) {
 }
 
 function handleBrickDestruction(brickObj) {
+  if (!brickObj.active) return; // Prevent double-destruction
+  bricks.remove(brickObj); // Remove from group to avoid recursion
   const type = brickObj.getData("type");
   if (type === "blue") {
     spawnPowerup.call(this, brickObj.x, brickObj.y);
