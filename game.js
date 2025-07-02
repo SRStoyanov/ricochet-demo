@@ -234,12 +234,15 @@ function create() {
   ball.body.setBounce(1, 1);
   resetBall.call(this); // Start with ball glued to paddle
 
+  // Center bricks horizontally
+  const totalBricksWidth = BRICK_COLS * BRICK_WIDTH + (BRICK_COLS - 1) * 4;
+  const bricksStartX = (config.width - totalBricksWidth) / 2 + BRICK_WIDTH / 2;
   // Create and randomize brick positions
   bricks = this.physics.add.staticGroup(); // Bricks are static
   let brickPositions = [];
   for (let row = 0; row < BRICK_ROWS; row++) {
     for (let col = 0; col < BRICK_COLS; col++) {
-      let x = 64 + col * (BRICK_WIDTH + 4);
+      let x = bricksStartX + col * (BRICK_WIDTH + 4);
       let y = 60 + row * (BRICK_HEIGHT + 4);
       brickPositions.push({ x, y });
     }
@@ -247,7 +250,7 @@ function create() {
   Phaser.Utils.Array.Shuffle(brickPositions); // Shuffle positions
 
   // Place a few orange bricks randomly
-  let orangeBrickCount = 8; // Number of orange bricks
+  let orangeBrickCount = 4; // Number of orange bricks (reduced)
   let orangeIndices = Phaser.Utils.Array.Shuffle([
     ...Array(BRICK_ROWS * BRICK_COLS).keys(),
   ]).slice(0, orangeBrickCount);
@@ -424,6 +427,12 @@ function create() {
       playRandomBounce(this);
     }
   });
+
+  // Draw a 1-pixel light-gray border around the whole screen (including UI bar)
+  const border = this.add.graphics();
+  border.lineStyle(1, 0xcccccc, 1);
+  border.strokeRect(0.5, 0.5, config.width - 1, config.height - 1);
+  border.setDepth(1000); // On top of everything
 }
 
 // Main game loop, runs every frame
@@ -485,9 +494,8 @@ function resetBall() {
 
 // Launch the ball with a random angle
 function launchBall() {
-  let angle = Phaser.Math.Between(-60, 60);
-  let rad = Phaser.Math.DegToRad(angle);
-  ball.body.setVelocity(ballSpeed * Math.sin(rad), -ballSpeed * Math.cos(rad));
+  // Always launch straight up from the paddle's center
+  ball.body.setVelocity(0, -ballSpeed);
   ballLaunched = true;
 }
 
@@ -527,7 +535,7 @@ function handleBrickDestruction(brickObj) {
   }
   if (type === "orange") {
     // Visual explosion effect
-    const explosionRadius = Math.max(BRICK_WIDTH, BRICK_HEIGHT) * 2.2; // Wider radius
+    const explosionRadius = Math.max(BRICK_WIDTH, BRICK_HEIGHT) * 1.5; // Reduced radius
     const bx = brickObj.x;
     const by = brickObj.y;
     // Create a white circle at the brick's position
