@@ -7,6 +7,7 @@ class TitleScene extends Phaser.Scene {
     preload.call(this);
   }
   create() {
+    this.starfield = new Starfield(this, config.width, config.height, 80);
     // Play music if not already playing
     if (!this.sound.get("bgm")) {
       this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
@@ -15,7 +16,7 @@ class TitleScene extends Phaser.Scene {
       this.bgm = this.sound.get("bgm");
       if (!this.bgm.isPlaying) this.bgm.play();
     }
-    this.cameras.main.setBackgroundColor("#222");
+    this.cameras.main.setBackgroundColor("#111");
     this.add
       .text(config.width / 2, 180, "Rogueochet Demo", {
         fontSize: "48px",
@@ -36,6 +37,9 @@ class TitleScene extends Phaser.Scene {
     startBtn.on("pointerdown", () => {
       this.scene.start("MainScene");
     });
+  }
+  update() {
+    if (this.starfield) this.starfield.update();
   }
 }
 
@@ -77,10 +81,16 @@ class MainScene extends Phaser.Scene {
     /* no-op, already loaded in TitleScene */
   }
   create() {
+    this.starfield = new Starfield(this, config.width, config.height, 80);
+    this.cameras.main.setBackgroundColor("#111");
     create.call(this);
   }
   update() {
+    if (this.starfield) this.starfield.update();
     update.call(this);
+  }
+  shutdown() {
+    if (this.starfield) this.starfield.destroy();
   }
 }
 
@@ -157,6 +167,50 @@ let lives = MAX_LIVES; // Player's remaining lives
 let ballSpeed = START_BALL_SPEED; // Current ball speed
 let sfxMuted = false; // SFX mute state
 let ballRotationDir = 1; // 1 for clockwise, -1 for counterclockwise
+
+// Starfield class for twinkling background
+class Starfield {
+  constructor(scene, width, height, starCount = 80) {
+    this.scene = scene;
+    this.width = width;
+    this.height = height;
+    this.starCount = starCount;
+    this.graphics = scene.add.graphics();
+    this.graphics.setDepth(-100);
+    this.stars = [];
+    const STAR_COLORS = [0xffffff, 0xffff66];
+    for (let i = 0; i < starCount; i++) {
+      let x = Phaser.Math.Between(0, width);
+      let y = Phaser.Math.Between(0, height);
+      let color = Phaser.Utils.Array.GetRandom(STAR_COLORS);
+      let size = Phaser.Math.FloatBetween(1, 2.5);
+      let twinkleSpeed = Phaser.Math.FloatBetween(0.001, 0.004);
+      let twinklePhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      this.stars.push({
+        x,
+        y,
+        color,
+        size,
+        twinkleSpeed,
+        twinklePhase,
+        alpha: 1,
+      });
+    }
+  }
+  update() {
+    this.graphics.clear();
+    for (let star of this.stars) {
+      star.twinklePhase += star.twinkleSpeed;
+      star.alpha = 0.5 + 0.5 * Math.sin(star.twinklePhase);
+      this.graphics.fillStyle(star.color, star.alpha);
+      this.graphics.fillCircle(star.x, star.y, star.size);
+    }
+  }
+  destroy() {
+    this.graphics.destroy();
+    this.stars = [];
+  }
+}
 
 // Create game objects and set up the scene
 function create() {

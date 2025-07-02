@@ -59,6 +59,7 @@ Sound files were created using https://sfxr.me/
 
 ## Sprites and Graphics
 
+- The **background** is a procedurally generated, animated starfield of white and yellow stars on a dark sky. The stars twinkle slowly and are always drawn behind all other game elements. This starfield is visible on both the title screen and the main gameplay screen, but not on the game over screen. The stars are purely visual and have no collision or interaction.
 - The **paddle** uses a custom PNG sprite (`paddle.png`) for its appearance.
 - The **ball** uses a custom PNG sprite (`ball.png`) and rotates as it moves for a dynamic effect.
 - **Bricks** use custom PNG sprites for each type:
