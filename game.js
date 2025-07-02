@@ -73,6 +73,36 @@ class GameOverScene extends Phaser.Scene {
   }
 }
 
+class VictoryScene extends Phaser.Scene {
+  constructor() {
+    super("VictoryScene");
+  }
+  create() {
+    this.cameras.main.setBackgroundColor("#ffe066"); // Nice yellow
+    this.add
+      .text(config.width / 2, 200, "Victory!", {
+        fontSize: "48px",
+        fill: "#fff",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    const restartBtn = this.add
+      .text(config.width / 2, 340, "Restart", {
+        fontSize: "36px",
+        fill: "#fff",
+        backgroundColor: "#a00",
+        padding: { left: 30, right: 30, top: 10, bottom: 10 },
+        borderRadius: 10,
+      })
+      .setOrigin(0.5)
+      .setInteractive();
+    restartBtn.on("pointerdown", () => {
+      lives = MAX_LIVES;
+      this.scene.start("MainScene");
+    });
+  }
+}
+
 class MainScene extends Phaser.Scene {
   constructor() {
     super("MainScene");
@@ -107,7 +137,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [TitleScene, MainScene, GameOverScene],
+  scene: [TitleScene, MainScene, GameOverScene, VictoryScene],
 };
 
 // Create the Phaser game instance (move this below config)
@@ -480,6 +510,12 @@ function update() {
   if (ballLaunched && ball && ball.body && ball.body.speed > 0) {
     // Rotation speed is 1/5000 of ball's travel speed (very slow)
     ball.rotation += (ball.body.speed / 5000) * ballRotationDir;
+  }
+
+  // Check for victory (all bricks destroyed)
+  if (bricks && bricks.countActive(true) === 0) {
+    this.scene.start("VictoryScene");
+    return;
   }
 }
 

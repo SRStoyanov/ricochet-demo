@@ -47,6 +47,7 @@ Sound files were created using https://sfxr.me/
 
 - The game starts with a **title screen** displaying the game name ("Rogueochet Demo") and a **Start** button. Background music begins here and continues throughout the game.
 - After losing all lives, a **Game Over screen** appears with a red background, a "Game Over!" message, and a clearly visible **Restart** button.
+- **Victory screen:** When all bricks are destroyed, a bright yellow Victory screen appears with a "Victory!" message and a **Restart** button.
 - Clicking **Restart** resets your lives to 3 and starts a new game.
 - The bottom of the screen features a distinct horizontal UI bar, visually separated from the play area.
 - The UI bar displays:
