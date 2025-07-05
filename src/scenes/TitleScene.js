@@ -90,6 +90,17 @@ export class TitleScene extends Phaser.Scene {
     startBtn.on("pointerout", () => {
       startBtn.setStyle({ backgroundColor: "#333388" });
     });
+
+    // ESC key support - could be used for settings or exit in future
+    this.input.keyboard.on("keydown-ESC", () => {
+      // For now, just start the game like clicking Start
+      this.scene.start(SCENES.MAIN);
+    });
+
+    // Space key as alternative to start
+    this.input.keyboard.on("keydown-SPACE", () => {
+      this.scene.start(SCENES.MAIN);
+    });
   }
 
   update() {

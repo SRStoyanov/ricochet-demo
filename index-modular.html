@@ -45,6 +45,7 @@
         text-align: center;
         color: #aaa;
         font-size: 14px;
+        z-index: 5;
       }
 
       .version {
@@ -53,6 +54,7 @@
         right: 0;
         color: #666;
         font-size: 12px;
+        z-index: 5;
       }
 
       @media (max-width: 850px) {
@@ -68,18 +70,19 @@
           background: rgba(0, 0, 0, 0.8);
           border-radius: 4px;
         }
+
+        .game-container canvas {
+          position: relative;
+          z-index: 10;
+        }
+
+        .game-container {
+          position: relative;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="game-container">
-      <div class="loading" id="loading">Loading game...</div>
-      <div class="version">v2.0 Modular</div>
-      <div class="controls">
-        Mouse to move paddle • Click to launch ball • ESC for menu
-      </div>
-    </div>
-
     <!-- Load Phaser 3 -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 
@@ -87,14 +90,18 @@
     <script type="module" src="src/main.js"></script>
 
     <script>
-      // Hide loading text once game starts
+      // Hide loading text and controls once game starts
       window.addEventListener('load', () => {
         setTimeout(() => {
           const loading = document.getElementById('loading');
+          const controls = document.getElementById('controls');
           if (loading) {
             loading.style.display = 'none';
           }
-        }, 1000);
+          if (controls) {
+            controls.style.display = 'none';
+          }
+        }, 2000);
       });
 
       // Handle window resize

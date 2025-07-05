@@ -1,7 +1,7 @@
-import { GameState, resetGameState } from '../config/gameConfig.js';
-import { GAME_CONFIG, COLORS, SCENES, AUDIO } from '../config/constants.js';
-import { BrickSystem } from '../systems/BrickSystem.js';
-import { PowerupSystem } from '../systems/PowerupSystem.js';
+import { GameState, resetGameState } from "../config/gameConfig.js";
+import { GAME_CONFIG, COLORS, SCENES, AUDIO } from "../config/constants.js";
+import { BrickSystem } from "../systems/BrickSystem.js";
+import { PowerupSystem } from "../systems/PowerupSystem.js";
 
 export class MainScene extends Phaser.Scene {
   constructor() {
@@ -16,6 +16,12 @@ export class MainScene extends Phaser.Scene {
     // Reset game state
     resetGameState();
     this.gameState = GameState;
+
+    // Pause state
+    this.isPaused = false;
+    this.pauseOverlay = null;
+    this.instructionsOverlay = null;
+    this.showingInstructions = false;
 
     // Initialize systems
     this.brickSystem = new BrickSystem(this);
@@ -32,16 +38,20 @@ export class MainScene extends Phaser.Scene {
     this.setupInput();
     this.setupPhysics();
     this.setupWorldBounds();
+    this.setupPauseControls();
 
     // Initialize UI
     this.updateUI();
+
+    // Show initial instructions
+    this.showInitialInstructions();
   }
 
   createPaddle() {
     this.paddle = this.add.sprite(
       this.game.config.width / 2,
       this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT - 20,
-      'paddle'
+      "paddle",
     );
     this.paddle.displayWidth = GAME_CONFIG.PADDLE_WIDTH;
     this.paddle.displayHeight = GAME_CONFIG.PADDLE_HEIGHT;
@@ -53,7 +63,7 @@ export class MainScene extends Phaser.Scene {
     this.ball = this.add.sprite(
       this.game.config.width / 2,
       this.game.config.height - 60,
-      'ball'
+      "ball",
     );
     this.ball.displayWidth = GAME_CONFIG.BALL_SIZE;
     this.ball.displayHeight = GAME_CONFIG.BALL_SIZE;
@@ -74,7 +84,7 @@ export class MainScene extends Phaser.Scene {
       this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT / 2,
       this.game.config.width,
       GAME_CONFIG.UI_BAR_HEIGHT,
-      COLORS.UI_BAR
+      COLORS.UI_BAR,
     );
     uiBar.setOrigin(0.5);
     uiBar.setDepth(100);
@@ -83,69 +93,84 @@ export class MainScene extends Phaser.Scene {
     this.livesText = this.add.text(
       30,
       this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT + 15,
-      'Lives: ' + this.gameState.lives,
-      { fontSize: '24px', fill: '#fff' }
+      "Lives: " + this.gameState.lives,
+      { fontSize: "24px", fill: "#fff" },
     );
     this.livesText.setDepth(101);
 
     this.speedText = this.add.text(
       200,
       this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT + 15,
-      'Speed: ' + this.gameState.ballSpeed,
-      { fontSize: '24px', fill: '#fff' }
+      "Speed: " + this.gameState.ballSpeed,
+      { fontSize: "24px", fill: "#fff" },
     );
     this.speedText.setDepth(101);
 
     // SFX mute button
     this.sfxButton = this.add
-      .text(400, this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT + 15, '🔊 SFX', {
-        fontSize: '24px',
-        fill: '#fff',
-        backgroundColor: '#444',
-        padding: { left: 10, right: 10, top: 2, bottom: 2 },
-        borderRadius: 5,
-      })
+      .text(
+        400,
+        this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT + 15,
+        "🔊 SFX",
+        {
+          fontSize: "24px",
+          fill: "#fff",
+          backgroundColor: "#444",
+          padding: { left: 10, right: 10, top: 2, bottom: 2 },
+          borderRadius: 5,
+        },
+      )
       .setInteractive()
       .setDepth(101);
 
-    this.sfxButton.on('pointerdown', () => {
+    this.sfxButton.on("pointerdown", () => {
       this.gameState.sfxMuted = !this.gameState.sfxMuted;
-      this.sfxButton.setText(this.gameState.sfxMuted ? '🔇 SFX' : '🔊 SFX');
+      this.sfxButton.setText(this.gameState.sfxMuted ? "🔇 SFX" : "🔊 SFX");
     });
 
     // Music mute button
     this.musicMuted = false;
     this.musicButton = this.add
-      .text(520, this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT + 15, '🔊 Music', {
-        fontSize: '24px',
-        fill: '#fff',
-        backgroundColor: '#444',
-        padding: { left: 10, right: 10, top: 2, bottom: 2 },
-        borderRadius: 5,
-      })
+      .text(
+        520,
+        this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT + 15,
+        "🔊 Music",
+        {
+          fontSize: "24px",
+          fill: "#fff",
+          backgroundColor: "#444",
+          padding: { left: 10, right: 10, top: 2, bottom: 2 },
+          borderRadius: 5,
+        },
+      )
       .setInteractive()
       .setDepth(101);
 
-    this.musicButton.on('pointerdown', () => {
+    this.musicButton.on("pointerdown", () => {
       this.musicMuted = !this.musicMuted;
       if (this.bgm) this.bgm.setMute(this.musicMuted);
-      this.musicButton.setText(this.musicMuted ? '🔇 Music' : '🔊 Music');
+      this.musicButton.setText(this.musicMuted ? "🔇 Music" : "🔊 Music");
     });
 
     // Screen border
     const border = this.add.graphics();
     border.lineStyle(1, COLORS.BORDER, 1);
-    border.strokeRect(0.5, 0.5, this.game.config.width - 1, this.game.config.height - 1);
+    border.strokeRect(
+      0.5,
+      0.5,
+      this.game.config.width - 1,
+      this.game.config.height - 1,
+    );
     border.setDepth(1000);
   }
 
   setupInput() {
     // Mouse movement controls
-    this.input.on('pointermove', (pointer) => {
+    this.input.on("pointermove", (pointer) => {
       let newX = Phaser.Math.Clamp(
         pointer.x,
         GAME_CONFIG.PADDLE_WIDTH / 2,
-        this.game.config.width - GAME_CONFIG.PADDLE_WIDTH / 2
+        this.game.config.width - GAME_CONFIG.PADDLE_WIDTH / 2,
       );
       this.paddle.x = newX;
       this.paddle.body.updateFromGameObject();
@@ -153,12 +178,15 @@ export class MainScene extends Phaser.Scene {
       // Keep ball glued to paddle if not launched
       if (!this.gameState.ballLaunched) {
         this.ball.x = this.paddle.x;
-        this.ball.y = this.paddle.y - GAME_CONFIG.PADDLE_HEIGHT / 2 - GAME_CONFIG.BALL_SIZE / 2;
+        this.ball.y =
+          this.paddle.y -
+          GAME_CONFIG.PADDLE_HEIGHT / 2 -
+          GAME_CONFIG.BALL_SIZE / 2;
       }
     });
 
     // Launch ball on click
-    this.input.on('pointerdown', (pointer) => {
+    this.input.on("pointerdown", (pointer) => {
       // Don't launch if clicking in UI area
       if (pointer.y >= this.game.config.height - GAME_CONFIG.UI_BAR_HEIGHT) {
         return;
@@ -166,6 +194,22 @@ export class MainScene extends Phaser.Scene {
 
       if (!this.gameState.ballLaunched && this.gameState.lives > 0) {
         this.launchBall();
+      }
+    });
+
+    // ESC key for pause or hide instructions
+    this.input.keyboard.on("keydown-ESC", () => {
+      if (this.showingInstructions) {
+        this.hideInstructions();
+      } else {
+        this.togglePause();
+      }
+    });
+
+    // Space key to hide instructions
+    this.input.keyboard.on("keydown-SPACE", () => {
+      if (this.showingInstructions) {
+        this.hideInstructions();
       }
     });
   }
@@ -180,7 +224,7 @@ export class MainScene extends Phaser.Scene {
         this.playRandomBounce();
       },
       null,
-      this
+      this,
     );
 
     // Ball-brick collision
@@ -192,7 +236,7 @@ export class MainScene extends Phaser.Scene {
         this.playRandomBounce();
       },
       null,
-      this
+      this,
     );
   }
 
@@ -202,17 +246,288 @@ export class MainScene extends Phaser.Scene {
 
     // Handle world bounds collision sounds
     this.ball.body.onWorldBounds = true;
-    this.physics.world.on('worldbounds', (body, up, down, left, right) => {
+    this.physics.world.on("worldbounds", (body, up, down, left, right) => {
       if (body.gameObject === this.ball && (up || left || right)) {
         this.playRandomBounce();
       }
     });
   }
 
+  setupPauseControls() {
+    // ESC key listener is set up in setupInput()
+    // This method can be extended for additional pause-related setup
+  }
+
+  togglePause() {
+    this.isPaused = !this.isPaused;
+
+    if (this.isPaused) {
+      this.pauseGame();
+    } else {
+      this.resumeGame();
+    }
+  }
+
+  pauseGame() {
+    // Pause physics
+    this.physics.pause();
+
+    // Pause all tweens
+    this.tweens.pauseAll();
+
+    // Pause all timers
+    this.time.paused = true;
+
+    // Create pause overlay
+    this.createPauseOverlay();
+
+    // Mute sounds temporarily
+    this.sound.pauseAll();
+  }
+
+  resumeGame() {
+    // Resume physics
+    this.physics.resume();
+
+    // Resume all tweens
+    this.tweens.resumeAll();
+
+    // Resume timers
+    this.time.paused = false;
+
+    // Remove pause overlay
+    this.removePauseOverlay();
+
+    // Resume sounds
+    this.sound.resumeAll();
+  }
+
+  createPauseOverlay() {
+    if (this.pauseOverlay) return;
+
+    // Semi-transparent background
+    const bg = this.add.rectangle(
+      this.game.config.width / 2,
+      this.game.config.height / 2,
+      this.game.config.width,
+      this.game.config.height,
+      0x000000,
+      0.7,
+    );
+    bg.setDepth(1000);
+
+    // Pause text
+    const pauseText = this.add
+      .text(
+        this.game.config.width / 2,
+        this.game.config.height / 2 - 50,
+        "PAUSED",
+        {
+          fontSize: "48px",
+          fill: "#fff",
+          fontStyle: "bold",
+        },
+      )
+      .setOrigin(0.5);
+    pauseText.setDepth(1001);
+
+    // Instructions
+    const instructions = this.add
+      .text(
+        this.game.config.width / 2,
+        this.game.config.height / 2 + 20,
+        "Press ESC to resume\nClick to resume",
+        {
+          fontSize: "24px",
+          fill: "#ccc",
+          align: "center",
+        },
+      )
+      .setOrigin(0.5);
+    instructions.setDepth(1001);
+
+    // Menu button
+    const menuBtn = this.add
+      .text(
+        this.game.config.width / 2,
+        this.game.config.height / 2 + 100,
+        "Main Menu",
+        {
+          fontSize: "24px",
+          fill: "#fff",
+          backgroundColor: "#333388",
+          padding: { left: 20, right: 20, top: 10, bottom: 10 },
+          borderRadius: 5,
+        },
+      )
+      .setOrigin(0.5)
+      .setInteractive();
+    menuBtn.setDepth(1001);
+
+    menuBtn.on("pointerdown", () => {
+      this.scene.start(SCENES.TITLE);
+    });
+
+    menuBtn.on("pointerover", () => {
+      menuBtn.setStyle({ backgroundColor: "#4444aa" });
+    });
+
+    menuBtn.on("pointerout", () => {
+      menuBtn.setStyle({ backgroundColor: "#333388" });
+    });
+
+    // Click to resume
+    bg.setInteractive();
+    bg.on("pointerdown", () => {
+      this.togglePause();
+    });
+
+    // Store references
+    this.pauseOverlay = {
+      bg,
+      pauseText,
+      instructions,
+      menuBtn,
+    };
+  }
+
+  removePauseOverlay() {
+    if (!this.pauseOverlay) return;
+
+    Object.values(this.pauseOverlay).forEach((element) => {
+      if (element && element.destroy) {
+        element.destroy();
+      }
+    });
+
+    this.pauseOverlay = null;
+  }
+
+  showInitialInstructions() {
+    if (this.instructionsOverlay) return;
+
+    this.showingInstructions = true;
+
+    // Semi-transparent background
+    const bg = this.add.rectangle(
+      this.game.config.width / 2,
+      this.game.config.height / 2,
+      this.game.config.width,
+      this.game.config.height,
+      0x000000,
+      0.8,
+    );
+    bg.setDepth(1002);
+
+    // Title
+    const title = this.add
+      .text(
+        this.game.config.width / 2,
+        this.game.config.height / 2 - 200,
+        "HOW TO PLAY",
+        {
+          fontSize: "36px",
+          fill: "#fff",
+          fontStyle: "bold",
+        },
+      )
+      .setOrigin(0.5);
+    title.setDepth(1003);
+
+    // Instructions
+    const instructions = this.add
+      .text(
+        this.game.config.width / 2,
+        this.game.config.height / 2 - 20,
+        "🖱️  Move mouse to control paddle\n🖱️  Click to launch ball\n⌨️  Press ESC to pause game\n\n🧱  Blue bricks spawn powerups\n🧱  Red bricks need 2 hits\n🧱  Orange bricks explode!\n\n🎯  Destroy all bricks to win!",
+        {
+          fontSize: "18px",
+          fill: "#ccc",
+          align: "center",
+          lineSpacing: 5,
+        },
+      )
+      .setOrigin(0.5);
+    instructions.setDepth(1003);
+
+    // Start button
+    const startBtn = this.add
+      .text(
+        this.game.config.width / 2,
+        this.game.config.height / 2 + 200,
+        "Start Game",
+        {
+          fontSize: "24px",
+          fill: "#fff",
+          backgroundColor: "#333388",
+          padding: { left: 25, right: 25, top: 12, bottom: 12 },
+          borderRadius: 8,
+        },
+      )
+      .setOrigin(0.5)
+      .setInteractive();
+    startBtn.setDepth(1003);
+
+    startBtn.on("pointerdown", () => {
+      this.hideInstructions();
+    });
+
+    startBtn.on("pointerover", () => {
+      startBtn.setStyle({ backgroundColor: "#4444aa" });
+    });
+
+    startBtn.on("pointerout", () => {
+      startBtn.setStyle({ backgroundColor: "#333388" });
+    });
+
+    // Click anywhere to start
+    bg.setInteractive();
+    bg.on("pointerdown", () => {
+      this.hideInstructions();
+    });
+
+    // Store references
+    this.instructionsOverlay = {
+      bg,
+      title,
+      instructions,
+      startBtn,
+    };
+
+    // Auto-hide after 8 seconds
+    this.time.delayedCall(8000, () => {
+      if (this.showingInstructions) {
+        this.hideInstructions();
+      }
+    });
+  }
+
+  hideInstructions() {
+    if (!this.instructionsOverlay) return;
+
+    this.showingInstructions = false;
+
+    Object.values(this.instructionsOverlay).forEach((element) => {
+      if (element && element.destroy) {
+        element.destroy();
+      }
+    });
+
+    this.instructionsOverlay = null;
+  }
+
   update() {
+    // Don't update game logic when paused or showing instructions
+    if (this.isPaused || this.showingInstructions) {
+      return;
+    }
+
     // Maintain constant ball speed
     if (this.gameState.ballLaunched) {
-      let velocity = new Phaser.Math.Vector2(this.ball.body.velocity.x, this.ball.body.velocity.y);
+      let velocity = new Phaser.Math.Vector2(
+        this.ball.body.velocity.x,
+        this.ball.body.velocity.y,
+      );
       velocity = velocity.normalize().scale(this.gameState.ballSpeed);
       this.ball.body.setVelocity(velocity.x, velocity.y);
     }
@@ -237,7 +552,8 @@ export class MainScene extends Phaser.Scene {
   resetBall() {
     this.gameState.ballLaunched = false;
     this.ball.x = this.paddle.x;
-    this.ball.y = this.paddle.y - GAME_CONFIG.PADDLE_HEIGHT / 2 - GAME_CONFIG.BALL_SIZE / 2;
+    this.ball.y =
+      this.paddle.y - GAME_CONFIG.PADDLE_HEIGHT / 2 - GAME_CONFIG.BALL_SIZE / 2;
     this.ball.body.setVelocity(0, 0);
     this.ball.body.updateFromGameObject();
   }
@@ -246,7 +562,10 @@ export class MainScene extends Phaser.Scene {
     this.gameState.ballLaunched = true;
     const angle = Phaser.Math.DegToRad(-90 + Phaser.Math.Between(-30, 30));
     const speed = this.gameState.ballSpeed;
-    this.ball.body.setVelocity(speed * Math.sin(angle), speed * Math.cos(angle));
+    this.ball.body.setVelocity(
+      speed * Math.sin(angle),
+      speed * Math.cos(angle),
+    );
   }
 
   ballHitPaddle(ball, paddle) {
@@ -260,7 +579,7 @@ export class MainScene extends Phaser.Scene {
 
   handleBallLoss() {
     if (!this.gameState.sfxMuted) {
-      this.sound.play('death');
+      this.sound.play("death");
     }
 
     this.gameState.lives--;
@@ -276,20 +595,26 @@ export class MainScene extends Phaser.Scene {
     if (this.gameState.sfxMuted) return;
 
     const bounceIndex = Phaser.Math.Between(1, AUDIO.SFX_BOUNCE_VARIANTS);
-    this.sound.play('bounce-var' + bounceIndex);
+    this.sound.play("bounce-var" + bounceIndex);
 
     // Chance to reverse ball rotation
-    if (Phaser.Math.FloatBetween(0, 1) < GAME_CONFIG.BALL_ROTATION_REVERSE_CHANCE) {
+    if (
+      Phaser.Math.FloatBetween(0, 1) < GAME_CONFIG.BALL_ROTATION_REVERSE_CHANCE
+    ) {
       this.gameState.ballRotationDir *= -1;
     }
   }
 
   updateUI() {
-    this.livesText.setText('Lives: ' + this.gameState.lives);
-    this.speedText.setText('Speed: ' + this.gameState.ballSpeed);
+    this.livesText.setText("Lives: " + this.gameState.lives);
+    this.speedText.setText("Speed: " + this.gameState.ballSpeed);
   }
 
   shutdown() {
+    // Clean up overlays
+    this.removePauseOverlay();
+    this.hideInstructions();
+
     // Clean up systems
     if (this.brickSystem) {
       this.brickSystem.clearAll();
