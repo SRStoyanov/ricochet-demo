@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Loading Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #222;
+            color: #fff;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #2d5a2d; }
+        .error { background: #5a2d2d; }
+        .warning { background: #5a5a2d; }
+        .info { background: #2d2d5a; }
+        pre {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        #console {
+            border: 1px solid #666;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            background: #111;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Module Loading Debug Tool</h1>
+    <p>This tool helps diagnose issues with ES6 module loading.</p>
+
+    <div class="status info">
+        <strong>Step 1:</strong> Basic JavaScript test
+        <div id="js-test">Testing...</div>
+    </div>
+
+    <div class="status info">
+        <strong>Step 2:</strong> Phaser availability test
+        <div id="phaser-test">Testing...</div>
+    </div>
+
+    <div class="status info">
+        <strong>Step 3:</strong> Module loading test
+        <div id="module-test">Testing...</div>
+    </div>
+
+    <div class="status info">
+        <strong>Step 4:</strong> File existence test
+        <div id="file-test">Testing...</div>
+    </div>
+
+    <h2>Console Output</h2>
+    <div id="console"></div>
+
+    <h2>Manual Tests</h2>
+    <button class="test-btn" onclick="testModuleImport()">Test Module Import</button>
+    <button class="test-btn" onclick="testFileAccess()">Test File Access</button>
+    <button class="test-btn" onclick="testPhaserInit()">Test Phaser Init</button>
+    <button class="test-btn" onclick="clearConsole()">Clear Console</button>
+
+    <h2>Browser Information</h2>
+    <pre id="browser-info"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+
+    <script>
+        // Console logging
+        const consoleDiv = document.getElementById('console');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function logToDiv(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'warn' ? '#ffd93d' : '#51cf66';
+            consoleDiv.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            logToDiv(args.join(' '), 'log');
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            logToDiv(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+
+        console.warn = function(...args) {
+            logToDiv(args.join(' '), 'warn');
+            originalWarn.apply(console, args);
+        };
+
+        function clearConsole() {
+            consoleDiv.innerHTML = '';
+        }
+
+        function setStatus(elementId, message, success = true) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.parentElement.className = success ? 'status success' : 'status error';
+        }
+
+        function setWarning(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.parentElement.className = 'status warning';
+        }
+
+        // Test 1: Basic JavaScript
+        function testBasicJS() {
+            try {
+                console.log('✓ Basic JavaScript working');
+                setStatus('js-test', '✓ Basic JavaScript working');
+                return true;
+            } catch (error) {
+                console.error('✗ Basic JavaScript failed:', error);
+                setStatus('js-test', '✗ Basic JavaScript failed: ' + error.message, false);
+                return false;
+            }
+        }
+
+        // Test 2: Phaser availability
+        function testPhaser() {
+            try {
+                if (typeof Phaser !== 'undefined') {
+                    console.log('✓ Phaser loaded, version:', Phaser.VERSION);
+                    setStatus('phaser-test', `✓ Phaser loaded (v${Phaser.VERSION})`);
+                    return true;
+                } else {
+                    console.error('✗ Phaser not found');
+                    setStatus('phaser-test', '✗ Phaser not found', false);
+                    return false;
+                }
+            } catch (error) {
+                console.error('✗ Phaser test failed:', error);
+                setStatus('phaser-test', '✗ Phaser test failed: ' + error.message, false);
+                return false;
+            }
+        }
+
+        // Test 3: Module loading
+        async function testModules() {
+            try {
+                console.log('Testing module import...');
+                const module = await import('./src/config/constants.js');
+                console.log('✓ Module imported successfully:', Object.keys(module));
+                setStatus('module-test', '✓ Modules working');
+                return true;
+            } catch (error) {
+                console.error('✗ Module import failed:', error);
+                setStatus('module-test', '✗ Module import failed: ' + error.message, false);
+                return false;
+            }
+        }
+
+        // Test 4: File existence
+        async function testFiles() {
+            const files = [
+                'src/main.js',
+                'src/config/constants.js',
+                'src/config/gameConfig.js',
+                'src/scenes/TitleScene.js',
+                'src/entities/Starfield.js'
+            ];
+
+            let allFound = true;
+            const results = [];
+
+            for (const file of files) {
+                try {
+                    const response = await fetch(file);
+                    if (response.ok) {
+                        results.push(`✓ ${file}`);
+                        console.log(`✓ Found: ${file}`);
+                    } else {
+                        results.push(`✗ ${file} (${response.status})`);
+                        console.error(`✗ Missing: ${file} (${response.status})`);
+                        allFound = false;
+                    }
+                } catch (error) {
+                    results.push(`✗ ${file} (Error: ${error.message})`);
+                    console.error(`✗ Error accessing: ${file}`, error);
+                    allFound = false;
+                }
+            }
+
+            if (allFound) {
+                setStatus('file-test', '✓ All files found');
+            } else {
+                setStatus('file-test', '✗ Some files missing - check console', false);
+            }
+        }
+
+        // Manual test functions
+        async function testModuleImport() {
+            console.log('=== Manual Module Import Test ===');
+            try {
+                const constants = await import('./src/config/constants.js');
+                console.log('Constants module:', constants);
+
+                const gameConfig = await import('./src/config/gameConfig.js');
+                console.log('GameConfig module:', gameConfig);
+
+                const titleScene = await import('./src/scenes/TitleScene.js');
+                console.log('TitleScene module:', titleScene);
+
+                console.log('✓ All modules imported successfully');
+            } catch (error) {
+                console.error('✗ Module import failed:', error);
+            }
+        }
+
+        async function testFileAccess() {
+            console.log('=== File Access Test ===');
+            const testFiles = [
+                'assets/paddle.png',
+                'assets/ball.png',
+                'assets/bgm.mp3'
+            ];
+
+            for (const file of testFiles) {
+                try {
+                    const response = await fetch(file);
+                    console.log(`${file}: ${response.ok ? 'OK' : 'FAIL'} (${response.status})`);
+                } catch (error) {
+                    console.error(`${file}: ERROR -`, error.message);
+                }
+            }
+        }
+
+        function testPhaserInit() {
+            console.log('=== Phaser Initialization Test ===');
+            try {
+                const config = {
+                    type: Phaser.AUTO,
+                    width: 400,
+                    height: 300,
+                    backgroundColor: '#2c3e50',
+                    parent: 'phaser-test-container',
+                    scene: {
+                        create: function() {
+                            this.add.text(200, 150, 'Phaser Test', {
+                                fontSize: '24px',
+                                fill: '#fff'
+                            }).setOrigin(0.5);
+                            console.log('✓ Phaser game created successfully');
+                        }
+                    }
+                };
+
+                // Create container if it doesn't exist
+                let container = document.getElementById('phaser-test-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'phaser-test-container';
+                    container.style.margin = '20px 0';
+                    document.body.appendChild(container);
+                }
+
+                const game = new Phaser.Game(config);
+                console.log('✓ Phaser game initialized');
+            } catch (error) {
+                console.error('✗ Phaser initialization failed:', error);
+            }
+        }
+
+        // Browser info
+        function showBrowserInfo() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Online': navigator.onLine,
+                'Cookies Enabled': navigator.cookieEnabled,
+                'Local Storage': typeof(Storage) !== "undefined",
+                'ES6 Modules': typeof(import) !== "undefined",
+                'Current URL': window.location.href,
+                'Protocol': window.location.protocol,
+                'Host': window.location.host
+            };
+
+            document.getElementById('browser-info').textContent =
+                Object.entries(info).map(([key, value]) => `${key}: ${value}`).join('\n');
+        }
+
+        // Run initial tests
+        window.addEventListener('load', async function() {
+            console.log('=== Starting Diagnostic Tests ===');
+
+            showBrowserInfo();
+
+            // Wait a bit for Phaser to load
+            setTimeout(async () => {
+                testBasicJS();
+                testPhaser();
+                await testModules();
+                await testFiles();
+
+                console.log('=== Diagnostic Tests Complete ===');
+            }, 500);
+        });
+
+        // Capture errors
+        window.addEventListener('error', function(event) {
+            console.error('Global error:', event.error);
+            logToDiv(`Global error: ${event.error}`, 'error');
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            logToDiv(`Unhandled promise rejection: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>

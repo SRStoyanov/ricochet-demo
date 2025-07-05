@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test - Ricochet Game</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .game-container {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #333;
+        }
+        .info {
+            color: #fff;
+            margin: 10px 0;
+        }
+        .error {
+            color: #ff6b6b;
+            margin: 10px 0;
+        }
+        .success {
+            color: #51cf66;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="info">Simple Phaser Test</div>
+        <div id="game-status" class="info">Loading...</div>
+        <div id="game-container"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+    <script>
+        const statusDiv = document.getElementById('game-status');
+
+        function updateStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+            console.log(message);
+        }
+
+        // Check if Phaser loaded
+        if (typeof Phaser === 'undefined') {
+            updateStatus('❌ Phaser failed to load', 'error');
+        } else {
+            updateStatus(`✓ Phaser loaded (v${Phaser.VERSION})`, 'success');
+        }
+
+        // Simple scene for testing
+        class TestScene extends Phaser.Scene {
+            constructor() {
+                super('TestScene');
+            }
+
+            preload() {
+                updateStatus('Loading assets...', 'info');
+
+                // Create simple colored rectangles as placeholders
+                this.load.image('paddle', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+
+                // Handle load errors
+                this.load.on('loaderror', (file) => {
+                    console.warn('Failed to load:', file.key);
+                });
+            }
+
+            create() {
+                updateStatus('✓ Game created successfully!', 'success');
+
+                // Set background color
+                this.cameras.main.setBackgroundColor('#111');
+
+                // Add title text
+                this.add.text(400, 200, 'Phaser Test Working!', {
+                    fontSize: '32px',
+                    fill: '#fff',
+                    fontStyle: 'bold'
+                }).setOrigin(0.5);
+
+                // Add simple paddle
+                const paddle = this.add.rectangle(400, 500, 120, 20, 0x333388);
+
+                // Add simple ball
+                const ball = this.add.circle(400, 300, 10, 0xffffff);
+
+                // Add instructions
+                this.add.text(400, 400, 'Mouse to move paddle • Click to test', {
+                    fontSize: '16px',
+                    fill: '#aaa'
+                }).setOrigin(0.5);
+
+                // Mouse controls
+                this.input.on('pointermove', (pointer) => {
+                    paddle.x = Phaser.Math.Clamp(pointer.x, 60, 740);
+                });
+
+                this.input.on('pointerdown', () => {
+                    // Simple animation
+                    this.tweens.add({
+                        targets: ball,
+                        y: 250,
+                        duration: 500,
+                        yoyo: true,
+                        repeat: 1,
+                        ease: 'Power2'
+                    });
+                });
+
+                // Add some twinkling stars
+                for (let i = 0; i < 20; i++) {
+                    const star = this.add.circle(
+                        Phaser.Math.Between(50, 750),
+                        Phaser.Math.Between(50, 400),
+                        2,
+                        0xffffff,
+                        0.8
+                    );
+
+                    this.tweens.add({
+                        targets: star,
+                        alpha: 0.2,
+                        duration: Phaser.Math.Between(1000, 3000),
+                        yoyo: true,
+                        repeat: -1
+                    });
+                }
+
+                updateStatus('✓ Game running! Move mouse and click.', 'success');
+            }
+        }
+
+        // Game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            backgroundColor: '#111',
+            parent: 'game-container',
+            scene: TestScene,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 },
+                    debug: false
+                }
+            }
+        };
+
+        // Create game
+        try {
+            updateStatus('Initializing game...', 'info');
+            const game = new Phaser.Game(config);
+
+            // Global reference for debugging
+            window.testGame = game;
+
+        } catch (error) {
+            updateStatus('❌ Failed to create game: ' + error.message, 'error');
+            console.error('Game creation error:', error);
+        }
+
+        // Error handling
+        window.addEventListener('error', (event) => {
+            updateStatus('❌ JavaScript error: ' + event.error.message, 'error');
+            console.error('Global error:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            updateStatus('❌ Promise rejection: ' + event.reason, 'error');
+            console.error('Unhandled promise rejection:', event.reason);
+        });
+    </script>
+</body>
+</html>
