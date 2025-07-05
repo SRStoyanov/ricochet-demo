@@ -1,0 +1,25 @@
+[metadata]
+name=Classic Breakout
+difficulty=easy
+description=A traditional breakout level with basic brick types
+author=Game Developer
+
+[config]
+ballSpeed=200
+lives=3
+powerupsEnabled=true
+
+[bricks]
+BBBBBBBBB
+RRRRRRRRR
+GGGGGGGGG
+BRBRBRBR
+GGGGGGGGG
+..OOO..
+.......
+
+[rules]
+Blue bricks spawn powerups
+Red bricks need 2 hits
+Orange bricks explode when hit
+Green bricks break in 1 hit

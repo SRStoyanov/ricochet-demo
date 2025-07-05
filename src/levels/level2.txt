@@ -1,0 +1,33 @@
+[metadata]
+name=Fortress Defense
+difficulty=medium
+description=A challenging level with defensive formations and explosive traps
+author=Game Developer
+
+[config]
+ballSpeed=220
+lives=3
+powerupsEnabled=true
+
+[bricks]
+#########
+#BBBBBBB#
+#RRRRRRR#
+#GGGGGGG#
+#.......#
+#..OOO..#
+#.......#
+#BRBRBR.#
+#GGGGGGG#
+#.......#
+##.....##
+...OOO...
+.........
+
+[rules]
+Wall bricks (#) are indestructible
+Blue bricks spawn powerups
+Red bricks need 2 hits
+Orange bricks explode when hit
+Green bricks break in 1 hit
+Break through the fortress walls to reach the core

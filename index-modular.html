@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ricochet Breakout Game - Modular</title>
+    <style>
+      body {
+        margin: 0;
+        background: #111;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      .game-container {
+        position: relative;
+        border: 2px solid #333;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+
+      canvas {
+        display: block;
+        border-radius: 6px;
+      }
+
+      .loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 18px;
+        z-index: 1000;
+      }
+
+      .controls {
+        position: absolute;
+        bottom: -50px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: #aaa;
+        font-size: 14px;
+      }
+
+      .version {
+        position: absolute;
+        top: -30px;
+        right: 0;
+        color: #666;
+        font-size: 12px;
+      }
+
+      @media (max-width: 850px) {
+        .game-container {
+          margin: 10px;
+          border: 1px solid #333;
+        }
+
+        .controls {
+          position: static;
+          margin-top: 10px;
+          padding: 10px;
+          background: rgba(0, 0, 0, 0.8);
+          border-radius: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-container">
+      <div class="loading" id="loading">Loading game...</div>
+      <div class="version">v2.0 Modular</div>
+      <div class="controls">
+        Mouse to move paddle • Click to launch ball • ESC for menu
+      </div>
+    </div>
+
+    <!-- Load Phaser 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+
+    <!-- Load our modular game files -->
+    <script type="module" src="src/main.js"></script>
+
+    <script>
+      // Hide loading text once game starts
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loading = document.getElementById('loading');
+          if (loading) {
+            loading.style.display = 'none';
+          }
+        }, 1000);
+      });
+
+      // Handle window resize
+      window.addEventListener('resize', () => {
+        if (window.game && window.game.canvas) {
+          // Game will handle its own resize logic
+        }
+      });
+
+      // Prevent context menu on right click
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+      });
+
+      // Handle keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Prevent default behavior for game keys
+        if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+          e.preventDefault();
+        }
+      });
+    </script>
+  </body>
+</html>

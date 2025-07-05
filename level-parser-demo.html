@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Parser Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .demo-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .level-input {
+            width: 100%;
+            min-height: 300px;
+            font-family: monospace;
+            font-size: 14px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .level-preview {
+            margin: 20px 0;
+            padding: 10px;
+            background: #111;
+            border-radius: 4px;
+            overflow: auto;
+        }
+        .brick-grid {
+            display: grid;
+            gap: 2px;
+            justify-content: center;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .brick {
+            width: 30px;
+            height: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .brick-blue { background: #4444ff; color: white; }
+        .brick-red { background: #ff4444; color: white; }
+        .brick-green { background: #44ff44; color: black; }
+        .brick-orange { background: #ff8844; color: white; }
+        .brick-wall { background: #666; color: white; }
+        .brick-empty { background: transparent; }
+        .brick-metal { background: #888; color: white; }
+        .brick-diamond { background: #00ffff; color: black; }
+        .brick-power { background: #ff00ff; color: white; }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffe7e7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: #d00;
+        }
+        .success {
+            background: #e7ffe7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: #0a0;
+        }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Level Parser Demo</h1>
+        <p>This demo shows how to use the Level Parser system to create custom levels for the Ricochet game.</p>
+
+        <div class="demo-section">
+            <h2>📖 Brick Legend</h2>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="brick brick-blue">B</div>
+                    <span>Blue (Powerup)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="brick brick-red">R</div>
+                    <span>Red (2 hits)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="brick brick-green">G</div>
+                    <span>Green (1 hit)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="brick brick-orange">O</div>
+                    <span>Orange (Explodes)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="brick brick-wall">#</div>
+                    <span>Wall (Indestructible)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="brick brick-metal">M</div>
+                    <span>Metal (3 hits)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="brick brick-diamond">D</div>
+                    <span>Diamond (5 hits)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="brick brick-power">P</div>
+                    <span>Power (Guaranteed powerup)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>✏️ Level Editor</h2>
+            <textarea class="level-input" id="levelInput" placeholder="Enter your level data here...">
+[metadata]
+name=Demo Level
+difficulty=normal
+description=A demo level created with the level parser
+author=Level Designer
+
+[config]
+ballSpeed=200
+lives=3
+powerupsEnabled=true
+
+[bricks]
+BBBBBBBBB
+RRRRRRRRR
+GGGGGGGGG
+..OOO..
+.......
+BRBRBRBR
+GGGGGGGGG
+
+[rules]
+Blue bricks spawn powerups
+Red bricks need 2 hits
+Orange bricks explode when hit
+Green bricks break in 1 hit
+            </textarea>
+
+            <div class="controls">
+                <button onclick="parseLevel()">🔍 Parse Level</button>
+                <button onclick="loadExample(1)">📄 Load Example 1</button>
+                <button onclick="loadExample(2)">📄 Load Example 2</button>
+                <button onclick="clearLevel()">🗑️ Clear</button>
+                <button onclick="generateRandom()">🎲 Generate Random</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎯 Level Preview</h2>
+            <div id="levelPreview" class="level-preview">
+                <p style="color: #888; text-align: center;">Parse a level to see preview</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📊 Level Data</h2>
+            <div id="levelData">
+                <p style="color: #888;">Parse a level to see data</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔧 Instructions</h2>
+            <div class="info">
+                <h3>How to create levels:</h3>
+                <ol>
+                    <li><strong>Metadata Section:</strong> Define level name, difficulty, description, and author</li>
+                    <li><strong>Config Section:</strong> Set game parameters like ball speed, lives, and powerups</li>
+                    <li><strong>Bricks Section:</strong> Draw your level using characters (B, R, G, O, #, etc.)</li>
+                    <li><strong>Rules Section:</strong> Add optional rules or instructions</li>
+                </ol>
+                <p><strong>Tips:</strong></p>
+                <ul>
+                    <li>Use dots (.) or spaces for empty areas</li>
+                    <li>Each row represents a horizontal line of bricks</li>
+                    <li>Bricks will be centered automatically</li>
+                    <li>Orange bricks (O) create explosions when hit</li>
+                    <li>Blue bricks (B) spawn powerups when destroyed</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Simple level parser implementation for demo
+        class DemoLevelParser {
+            constructor() {
+                this.brickCharMap = {
+                    'B': { type: 'blue', class: 'brick-blue' },
+                    'R': { type: 'red', class: 'brick-red' },
+                    'G': { type: 'green', class: 'brick-green' },
+                    'O': { type: 'orange', class: 'brick-orange' },
+                    '#': { type: 'wall', class: 'brick-wall' },
+                    'M': { type: 'metal', class: 'brick-metal' },
+                    'D': { type: 'diamond', class: 'brick-diamond' },
+                    'P': { type: 'power', class: 'brick-power' },
+                    '.': { type: 'empty', class: 'brick-empty' },
+                    ' ': { type: 'empty', class: 'brick-empty' }
+                };
+            }
+
+            parseLevel(levelText) {
+                const lines = levelText.trim().split('\n');
+                const levelData = {
+                    metadata: {},
+                    config: {},
+                    bricks: [],
+                    rules: []
+                };
+
+                let currentSection = '';
+                let brickRows = [];
+
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line === '') continue;
+
+                    if (line.startsWith('[') && line.endsWith(']')) {
+                        currentSection = line.slice(1, -1).toLowerCase();
+                        continue;
+                    }
+
+                    if (currentSection === 'metadata') {
+                        const [key, value] = line.split('=').map(s => s.trim());
+                        if (key && value) levelData.metadata[key] = value;
+                    } else if (currentSection === 'config') {
+                        const [key, value] = line.split('=').map(s => s.trim());
+                        if (key && value) {
+                            const numValue = parseFloat(value);
+                            levelData.config[key] = !isNaN(numValue) ? numValue :
+                                                   value === 'true' ? true :
+                                                   value === 'false' ? false : value;
+                        }
+                    } else if (currentSection === 'bricks') {
+                        brickRows.push(line);
+                    } else if (currentSection === 'rules') {
+                        levelData.rules.push(line);
+                    }
+                }
+
+                // Process brick layout
+                levelData.bricks = this.processBrickLayout(brickRows);
+                return levelData;
+            }
+
+            processBrickLayout(rows) {
+                const bricks = [];
+                const maxCols = Math.max(...rows.map(row => row.length));
+
+                for (let row = 0; row < rows.length; row++) {
+                    const rowText = rows[row];
+                    for (let col = 0; col < rowText.length; col++) {
+                        const char = rowText[col];
+                        const brickInfo = this.brickCharMap[char];
+
+                        if (brickInfo) {
+                            bricks.push({
+                                row,
+                                col,
+                                char,
+                                type: brickInfo.type,
+                                class: brickInfo.class
+                            });
+                        }
+                    }
+                }
+
+                return { bricks, maxCols, maxRows: rows.length };
+            }
+        }
+
+        const parser = new DemoLevelParser();
+
+        window.parseLevel = function() {
+            const input = document.getElementById('levelInput').value;
+            const preview = document.getElementById('levelPreview');
+            const dataDiv = document.getElementById('levelData');
+
+            try {
+                const levelData = parser.parseLevel(input);
+
+                // Create visual preview
+                const maxCols = levelData.bricks.maxCols;
+                const maxRows = levelData.bricks.maxRows;
+
+                let html = `<div class="brick-grid" style="grid-template-columns: repeat(${maxCols}, 1fr);">`;
+
+                for (let row = 0; row < maxRows; row++) {
+                    for (let col = 0; col < maxCols; col++) {
+                        const brick = levelData.bricks.bricks.find(b => b.row === row && b.col === col);
+                        if (brick) {
+                            html += `<div class="brick ${brick.class}">${brick.char}</div>`;
+                        } else {
+                            html += `<div class="brick brick-empty"></div>`;
+                        }
+                    }
+                }
+                html += '</div>';
+
+                preview.innerHTML = html;
+
+                // Show level data
+                dataDiv.innerHTML = `
+                    <div class="success">✅ Level parsed successfully!</div>
+                    <h3>Metadata:</h3>
+                    <pre>${JSON.stringify(levelData.metadata, null, 2)}</pre>
+                    <h3>Config:</h3>
+                    <pre>${JSON.stringify(levelData.config, null, 2)}</pre>
+                    <h3>Brick Count:</h3>
+                    <pre>Total bricks: ${levelData.bricks.bricks.filter(b => b.type !== 'empty').length}</pre>
+                    <h3>Rules:</h3>
+                    <pre>${levelData.rules.join('\n')}</pre>
+                `;
+
+            } catch (error) {
+                preview.innerHTML = `<div class="error">❌ Error parsing level: ${error.message}</div>`;
+                dataDiv.innerHTML = `<div class="error">❌ Error parsing level: ${error.message}</div>`;
+            }
+        };
+
+        window.loadExample = function(num) {
+            const examples = {
+                1: `[metadata]
+name=Classic Breakout
+difficulty=easy
+description=A traditional breakout level with basic brick types
+author=Game Developer
+
+[config]
+ballSpeed=200
+lives=3
+powerupsEnabled=true
+
+[bricks]
+BBBBBBBBB
+RRRRRRRRR
+GGGGGGGGG
+BRBRBRBR
+GGGGGGGGG
+..OOO..
+.......
+
+[rules]
+Blue bricks spawn powerups
+Red bricks need 2 hits
+Orange bricks explode when hit
+Green bricks break in 1 hit`,
+                2: `[metadata]
+name=Fortress Defense
+difficulty=medium
+description=A challenging level with defensive formations
+author=Game Developer
+
+[config]
+ballSpeed=220
+lives=3
+powerupsEnabled=true
+
+[bricks]
+#########
+#BBBBBBB#
+#RRRRRRR#
+#GGGGGGG#
+#.......#
+#..OOO..#
+#.......#
+#BRBRBR.#
+#GGGGGGG#
+#.......#
+##.....##
+...OOO...
+.........
+
+[rules]
+Wall bricks (#) are indestructible
+Break through the fortress walls
+Orange bricks explode when hit`
+            };
+
+            document.getElementById('levelInput').value = examples[num] || '';
+            parseLevel();
+        };
+
+        window.clearLevel = function() {
+            document.getElementById('levelInput').value = '';
+            document.getElementById('levelPreview').innerHTML = '<p style="color: #888; text-align: center;">Parse a level to see preview</p>';
+            document.getElementById('levelData').innerHTML = '<p style="color: #888;">Parse a level to see data</p>';
+        };
+
+        window.generateRandom = function() {
+            const brickTypes = ['B', 'R', 'G', 'O', '.'];
+            const rows = 8;
+            const cols = 10;
+
+            let brickLayout = '';
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    // Higher chance for actual bricks in upper rows
+                    const emptyChance = r < 3 ? 0.1 : 0.3;
+                    if (Math.random() < emptyChance) {
+                        brickLayout += '.';
+                    } else {
+                        // Orange bricks are rare
+                        let availableTypes = [...brickTypes];
+                        if (Math.random() < 0.9) {
+                            availableTypes = availableTypes.filter(t => t !== 'O');
+                        }
+                        brickLayout += availableTypes[Math.floor(Math.random() * availableTypes.length)];
+                    }
+                }
+                brickLayout += '\n';
+            }
+
+            const randomLevel = `[metadata]
+name=Random Generated Level
+difficulty=random
+description=A randomly generated level
+author=Level Generator
+
+[config]
+ballSpeed=200
+lives=3
+powerupsEnabled=true
+
+[bricks]
+${brickLayout}
+
+[rules]
+This level was randomly generated
+Good luck!`;
+
+            document.getElementById('levelInput').value = randomLevel;
+            parseLevel();
+        };
+
+        // Auto-parse on page load
+        parseLevel();
+    </script>
+</body>
+</html>
